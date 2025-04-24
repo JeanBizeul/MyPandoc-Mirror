@@ -21,7 +21,7 @@ jobs:
       - name: Permissions bug workaround
         run: "chown -R $(id -un):$(id -gn) ~"
       - name: make
-        timeout-minutes: 3 # Set to 3 mins because installation of ghc might takes a lot of time
+        timeout-minutes: 5 # Set to 3 mins because installation of ghc might takes a lot of time
         run: make
       - name: looking for executables
         if: hashFiles(env.EXECUTABLES) == ''
@@ -42,7 +42,7 @@ jobs:
       - name: Permissions bug workaround
         run: "chown -R $(id -un):$(id -gn) ~"
       - name: running tests
-        timeout-minutes: 3 # Same
+        timeout-minutes: 5 # Same
         run: make tests_run
   push_to_mirror:
     name: pushing

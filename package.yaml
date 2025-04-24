@@ -6,9 +6,6 @@ dependencies:
 
 library:
   source-dirs: src
-  exposed-modules:
-    - MyPandoc.Lib
-  language: Haskell2010
 
 executables:
   mypandoc:

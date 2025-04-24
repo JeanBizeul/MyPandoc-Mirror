@@ -7,8 +7,10 @@
 
 import Test.Hspec
 
+import qualified GeneralParserSpec
+
 main :: IO()
 main = hspec $ do
-    describe "Basic math" $ do
-        it "1 + 1 == 2" $ do
-            1 + 1 `shouldBe` 2
+    describe "General Parser" GeneralParserSpec.spec
+
+

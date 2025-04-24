@@ -52,6 +52,10 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+    - name: Set up the correct branch # Is needed because the default branch name was changed
+      run: |
+        git remote set-url origin ${{ env.MIRROR_URL }}
+        git checkout -b 1-initialize-haskell-stackhpack || git checkout 1-initialize-haskell-stackhpack
     - uses: pixta-dev/repository-mirroring-action@v1
       with:
         target_repo_url:

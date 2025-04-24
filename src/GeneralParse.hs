@@ -72,7 +72,7 @@ parseDigit = Parser f
 
 parseInt :: Parser Int
 parseInt = do
-    sign <- parseChar '-' <|> return '+'
+    sign <- parseChar '-' <|> return ' '
     digits <- some parseDigit
     return (read (sign : digits))
 

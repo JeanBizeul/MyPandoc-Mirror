@@ -18,6 +18,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+      - name: Permissions bug workaround
+        run: "chown -R $(id -un):$(id -gn) ~"
       - name: make
         timeout-minutes: 2
         run: make
@@ -37,6 +39,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+      - name: Permissions bug workaround
+        run: "chown -R $(id -un):$(id -gn) ~"
       - name: running tests
         timeout-minutes: 2
         run: make tests_run

@@ -1,0 +1,7 @@
+mypandoc
+
+*.lock
+*.cabal
+
+.vscode/
+.stack_work/

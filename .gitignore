@@ -4,4 +4,4 @@ mypandoc
 *.cabal
 
 .vscode/
-.stack_work/
+.stack-work/

@@ -1,0 +1,28 @@
+name: mypandoc
+description: "It's our pandoc now John !"
+
+dependencies:
+  - base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - MyPandoc.Lib
+  language: Haskell2010
+
+executables:
+  mypandoc:
+    main: Main.hs
+    source-dirs: app
+    ghc-options: -Wall
+    dependencies:
+      - mypandoc
+
+tests:
+  unit-tests:
+    main: Spec.hs
+    source-dirs: tests
+    ghc-options: -Wall
+    dependencies:
+      - mypandoc
+      - hspec

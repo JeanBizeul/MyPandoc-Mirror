@@ -12,12 +12,11 @@ TESTS_NAME	=	unit_tests
 all:	$(NAME)
 
 $(NAME):
-	stack build
+	stack build --allow-different-user
 	cp "$$(stack path --local-install-root)/bin/$(NAME)" .
 
 clean:
-	cabal clean
-	stack clean
+	stack clean --allow-different-user
 
 fclean:	clean
 	rm -rf .stack-work 
@@ -25,9 +24,9 @@ fclean:	clean
 re:	fclean $(NAME)
 
 unit_tests:
-	stack build --test --no-run-tests
+	stack build --test --no-run-tests --allow-different-user
 
 tests_run:	unit_tests
-	stack test
+	stack test --allow-different-user
 
 .PHONY:	all $(NAME) clean fclean re unit_tests tests_run

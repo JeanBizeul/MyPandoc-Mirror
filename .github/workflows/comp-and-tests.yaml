@@ -1,0 +1,56 @@
+name: Compilation and unit tests
+on:
+  push:
+    branches-ignore:
+      - 'ga-ignore-**'
+  pull_request:
+    branches-ignore:
+      - 'ga-ignore-**'
+env:
+  MIRROR_URL: "https://github.com/EpitechPromo2028/B-FUN-400-NAN-4-1-mypandoc-carlos.so-buaro"
+  EXECUTABLES: "mypandoc"
+jobs:
+  check_program_compilation:
+    name: compilation
+    runs-on: ubuntu-latest
+    container: epitechcontent/epitest-docker:latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: make
+        timeout-minutes: 2
+        run: make
+      - name: looking for executables
+        if: hashFiles(env.EXECUTABLES) == ''
+        run: |
+          echo "::error title="missing executable(s)!"::"
+          exit 1
+      - name: clean
+        run: make clean
+  run_tests:
+    name: tests
+    needs: check_program_compilation
+    runs-on: ubuntu-latest
+    container: epitechcontent/epitest-docker:latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: running tests
+        timeout-minutes: 2
+        run: make tests_run
+  push_to_mirror:
+    name: pushing
+    needs: run_tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: pixta-dev/repository-mirroring-action@v1
+      with:
+        target_repo_url:
+          ${{ env.MIRROR_URL }}
+        ssh_private_key:
+          ${{ secrets.GIT_SSH_PRIVATE_KEY }}

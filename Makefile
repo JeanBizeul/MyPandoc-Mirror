@@ -7,8 +7,6 @@
 
 NAME		=	mypandoc
 
-TESTS_NAME	=	unit_tests
-
 all:	$(NAME)
 
 $(NAME):
@@ -19,7 +17,8 @@ clean:
 	stack clean --allow-different-user
 
 fclean:	clean
-	rm -rf .stack-work 
+	rm -rf .stack-work
+	rm -rf $(NAME)
 
 re:	fclean $(NAME)
 

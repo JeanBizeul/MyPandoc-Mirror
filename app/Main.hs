@@ -5,7 +5,7 @@
 -- Main
 -}
 
-import MyPandoc.Lib
+import GeneralParse
 
 main :: IO ()
-main = mypandoc
+main = putStrLn "Failed to parse"

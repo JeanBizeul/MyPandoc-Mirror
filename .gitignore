@@ -5,3 +5,5 @@ mypandoc
 
 .vscode/
 .stack-work/
+
+coding-style-reports.log

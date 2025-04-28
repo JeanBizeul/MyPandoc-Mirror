@@ -101,3 +101,9 @@ parseString = traverse parseChar
 
 sepBy :: Parser a -> Parser sep -> Parser [a]
 sepBy p sep = (:) <$> p <*> many (sep *> p) <|> pure []
+
+parseWhitespace :: Parser ()
+parseWhitespace = () <$ many (parseAnyChar " \t\n\r")
+
+consumeWhitespaces :: Parser a -> Parser a
+consumeWhitespaces p = parseWhitespace *> p <* parseWhitespace

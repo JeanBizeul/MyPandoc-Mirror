@@ -72,10 +72,9 @@ parseDigit = Parser f
 
 parseInt :: Parser Int
 parseInt = do
-    sign <- parseChar '-' <|> return ' '
+    sign <- (parseChar '-' >> return "-") <|> return ""
     digits <- some parseDigit
-    return (read (sign : digits))
-
+    return (read (sign ++ digits))
 
 parseTuple :: Parser a -> Parser (a, a)
 parseTuple p = do
@@ -99,3 +98,6 @@ parseTruple p = do
 
 parseString :: String -> Parser String
 parseString = traverse parseChar
+
+sepBy :: Parser a -> Parser sep -> Parser [a]
+sepBy p sep = (:) <$> p <*> many (sep *> p) <|> pure []

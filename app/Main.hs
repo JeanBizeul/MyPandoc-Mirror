@@ -5,7 +5,7 @@
 -- Main
 -}
 
-import GeneralParse
+import GeneralParse ()
 
 main :: IO ()
 main = putStrLn "Failed to parse"

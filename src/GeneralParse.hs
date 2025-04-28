@@ -76,28 +76,37 @@ parseInt = do
     digits <- some parseDigit
     return (read (sign ++ digits))
 
-parseTuple :: Parser a -> Parser (a, a)
-parseTuple p = do
-    parseChar '('
-    a <- p
-    parseChar ','
-    b <- p
-    parseChar ')'
-    return (a, b)
-
-parseTruple :: Parser a -> Parser (a, a, a)
-parseTruple p = do
-    parseChar '('
-    a <- p
-    parseChar ','
-    b <- p
-    parseChar ','
-    c <- p
-    parseChar ')'
-    return (a, b, c)
-
 parseString :: String -> Parser String
 parseString = traverse parseChar
 
 sepBy :: Parser a -> Parser sep -> Parser [a]
 sepBy p sep = (:) <$> p <*> many (sep *> p) <|> pure []
+
+parseWhitespace :: Parser ()
+parseWhitespace = () <$ many (parseAnyChar " \t\n\r")
+
+consumeWhitespaces :: Parser a -> Parser a
+consumeWhitespaces p = parseWhitespace *> p <* parseWhitespace
+
+symbol :: Char -> Parser Char
+symbol c = consumeWhitespaces (parseChar c)
+
+parseTuple :: Parser a -> Parser (a, a)
+parseTuple p = do
+    symbol '('
+    a <- consumeWhitespaces p
+    symbol ','
+    b <- consumeWhitespaces p
+    symbol ')'
+    return (a, b)
+
+parseTruple :: Parser a -> Parser (a, a, a)
+parseTruple p = do
+    symbol '('
+    a <- consumeWhitespaces p
+    symbol ','
+    b <- consumeWhitespaces p
+    symbol ','
+    c <- consumeWhitespaces p
+    symbol ')'
+    return (a, b, c)

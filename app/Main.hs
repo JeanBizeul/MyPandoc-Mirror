@@ -6,6 +6,10 @@
 -}
 
 import GeneralParse ()
+import Options.Applicative
+import OptsParsing (opts)
 
 main :: IO ()
-main = putStrLn "Failed to parse"
+main = do
+    options <- execParser (info (opts <**> helper) fullDesc)
+    print options

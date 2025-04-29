@@ -8,12 +8,13 @@
 module XMLParse (
     BaliseArg(..),
     Balise(..),
-    parseMore,
-    consumeMore,
+    parseXMLWhitespaces,
+    consumeXMLWhitespaces,
     parseTitle,
     parseArgTag,
     parseArgContent,
-    parseBalise
+    parseBalise,
+    parseSimpleBalise
 ) where
 
 import GeneralParse
@@ -32,11 +33,11 @@ data Balise = Balise {
     baliseArgs :: Maybe [BaliseArg]
 }deriving (Show, Eq)
 
-parseMore :: Parser ()
-parseMore = () <$ many (parseAnyChar " \t\n\r=\"")
+parseXMLWhitespaces :: Parser ()
+parseXMLWhitespaces = () <$ many (parseAnyChar " \t\n\r=\"")
 
-consumeMore :: Parser a -> Parser a
-consumeMore p = parseMore *> p <* parseMore
+consumeXMLWhitespaces :: Parser a -> Parser a
+consumeXMLWhitespaces p = parseXMLWhitespaces *> p <* parseXMLWhitespaces
 
 parseTitle :: Parser String
 parseTitle = Parser f
@@ -63,7 +64,7 @@ parseArgContent = Parser f
   where
     f [] = Nothing
     f input =
-      let (argcontent, rest) = span (\c -> c /= '>') input
+      let (argcontent, rest) = span (\c -> c /= '>' && c /= '\"') input
       in if null argcontent
          then Nothing
          else Just (argcontent, rest)
@@ -73,6 +74,13 @@ parseBalise = do
     symbol '<'
     title <- parseTitle
     argtag <- consumeWhitespaces parseArgTag
-    argcontent <- consumeMore parseArgContent
+    argcontent <- consumeXMLWhitespaces parseArgContent
     symbolRev '>'
     return (Balise title (Just [(BaliseArg argtag (Just argcontent))]))
+
+parseSimpleBalise :: Parser Balise
+parseSimpleBalise = do
+    symbol '<'
+    title <- parseTitle
+    symbolRev '>'
+    return (Balise title Nothing)

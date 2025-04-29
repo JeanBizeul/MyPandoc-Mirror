@@ -14,7 +14,9 @@ module XMLParse (
     parseArgTag,
     parseArgContent,
     parseBalise,
-    parseSimpleBalise
+    parseSimpleBalise,
+    parseDoubleBalise,
+    parseXML
 ) where
 
 import GeneralParse
@@ -46,7 +48,7 @@ parseTitle = Parser f
   where
     f [] = Nothing
     f input =
-      let (title, rest) = span (\c -> c /= '>' && c /= ' ') input
+      let (title, rest) = span (\c -> c /= '>' && c /= ' ' && c /= '<') input
       in if null title
          then Nothing
          else Just (title, rest)
@@ -71,8 +73,8 @@ parseArgContent = Parser f
          then Nothing
          else Just (argcontent, rest)
 
-parseRest :: Parser String
-parseRest = Parser f
+parseRestCorrect :: Parser String
+parseRestCorrect = Parser f
   where
     f [] = Just ("", "")
     f input =
@@ -81,6 +83,16 @@ parseRest = Parser f
          then Nothing
          else Just (argcontent, rest)
 
+parseRestIncorrect :: Parser String
+parseRestIncorrect = Parser f
+  where
+    f [] = Just ("", "")
+    f input =
+      let (argcontent, rest) = span (\c -> c /= '\0') input
+      in if null argcontent
+         then Nothing
+         else Nothing
+
 parseBalise :: Parser Balise
 parseBalise = do
     symbol '<'
@@ -88,15 +100,15 @@ parseBalise = do
     argtag <- consumeWhitespaces parseArgTag
     argcontent <- consumeXMLWhitespaces parseArgContent
     symbol '>'
-    rest <- parseRest
-    return (trace (show rest) (Balise title
-        (Just [(BaliseArg argtag (Just argcontent))])))
+    rest <- parseRestCorrect
+    return (Balise title (Just [(BaliseArg argtag (Just argcontent))]))
 
 parseSimpleBalise :: Parser Balise
 parseSimpleBalise = do
     symbol '<'
     title <- parseTitle
     symbol '>'
+    parseRestIncorrect
     return (Balise title Nothing)
 
 parseContentBetween :: Parser String
@@ -109,11 +121,18 @@ parseContentBetween = Parser f
          then Nothing
          else Just (content, rest)
 
+getTitleBalise :: Parser Balise
+getTitleBalise = do
+    symbol '<'
+    title <- parseTitle
+    symbol '>'
+    return (Balise title Nothing)
+
 parseDoubleBalise :: Parser Balise
 parseDoubleBalise = do
-    title <- parseSimpleBalise
+    title <- getTitleBalise
     content <- parseContentBetween
-    parseSimpleBalise
+    getTitleBalise
     return(Balise (baliseTitle title) (Just [(BaliseArg "content" (Just content))]))
 
 parseOr:: Parser a -> Parser a -> Parser a
@@ -124,14 +143,6 @@ parseOr (Parser p1) (Parser p2) = Parser $ \input ->
 
 parseXML :: Parser Balise
 parseXML = parseDoubleBalise `parseOr` parseBalise `parseOr` parseSimpleBalise
-
---  <document>
---  <header title=\"Simple example\"></header>
---  <body>
---  <paragraph>This is a simple example</paragraph>
---  </body>
---  </document>
-
 
 --Order of magnitude
 --

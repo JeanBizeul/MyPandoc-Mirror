@@ -8,6 +8,8 @@
 import GeneralParse
 import Data.Char
 import Data.List
+import Control.Applicative (many)
+
 
 data BaliseArg = BaliseArg {
     baliseArgTag :: String,
@@ -19,6 +21,12 @@ data Balise = Balise {
     baliseArgs :: Maybe [BaliseArg]
 }deriving (Show, Eq)
 
+parseMore :: Parser ()
+parseMore = () <$ many (parseAnyChar " \t\n\r=\"")
+
+consumeMore :: Parser a -> Parser a
+consumeMore p = parseMore *> p <* parseMore
+
 parseTitle :: Parser String
 parseTitle = Parser f
   where
@@ -29,9 +37,31 @@ parseTitle = Parser f
          then Nothing
          else Just (title, rest)
 
+parseArgTag :: Parser String
+parseArgTag = Parser f
+  where
+    f [] = Nothing
+    f input =
+      let (argtag, rest) = span (\c -> c /= '=' && c /= ' ') input
+      in if null argtag
+         then Nothing
+         else Just (argtag, rest)
+
+parseArgContent :: Parser String
+parseArgContent = Parser f
+  where
+    f [] = Nothing
+    f input =
+      let (argcontent, rest) = span (\c -> c /= '>') input
+      in if null argcontent
+         then Nothing
+         else Just (argcontent, rest)
+
 parseBalise :: Parser Balise
 parseBalise = do
     symbol '<'
     title <- parseTitle
+    argtag <- consumeWhitespaces parseArgTag
+    argcontent <- consumeMore parseArgContent
     symbolRev '>'
-    return (Balise title Nothing)
+    return (Balise title (Just [(BaliseArg argtag (Just argcontent))]))

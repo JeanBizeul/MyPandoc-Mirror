@@ -5,6 +5,17 @@
 -- XMLParse
 -}
 
+module XMLParse (
+    BaliseArg(..),
+    Balise(..),
+    parseMore,
+    consumeMore,
+    parseTitle,
+    parseArgTag,
+    parseArgContent,
+    parseBalise
+) where
+
 import GeneralParse
 import Data.Char
 import Data.List

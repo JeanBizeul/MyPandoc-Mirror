@@ -20,6 +20,8 @@ module XMLParse (
 import GeneralParse
 import Data.Char
 import Data.List
+import Data.Maybe
+import Data.Bool
 import Control.Applicative (many)
 import Debug.Trace
 
@@ -113,6 +115,15 @@ parseDoubleBalise = do
     content <- parseContentBetween
     parseSimpleBalise
     return(Balise (baliseTitle title) (Just [(BaliseArg "content" (Just content))]))
+
+parseOr:: Parser a -> Parser a -> Parser a
+parseOr (Parser p1) (Parser p2) = Parser $ \input ->
+    case p1 input of
+        Just result -> Just result
+        Nothing     -> p2 input
+
+parseXML :: Parser Balise
+parseXML = parseDoubleBalise `parseOr` parseBalise `parseOr` parseSimpleBalise
 
 --  <document>
 --  <header title=\"Simple example\"></header>

@@ -19,13 +19,19 @@ data Balise = Balise {
     baliseArgs :: Maybe [BaliseArg]
 }deriving (Show, Eq)
 
-getString:: String -> String
-getString (x:xs)
-    | x == '<' = getString xs
-    | x == '>' = ""
-    | otherwise = [x] ++ getString xs
+parseTitle :: Parser String
+parseTitle = Parser f
+  where
+    f [] = Nothing
+    f input =
+      let (title, rest) = span (\c -> c /= '>' && c /= ' ') input
+      in if null title
+         then Nothing
+         else Just (title, rest)
 
-startXML:: String -> Maybe String
-startXML a
-    | head a /= '<' || last a /= '>' = Nothing
-    | otherwise = Just (getString a)
+parseBalise :: Parser Balise
+parseBalise = do
+    symbol '<'
+    title <- parseTitle
+    symbolRev '>'
+    return (Balise title Nothing)

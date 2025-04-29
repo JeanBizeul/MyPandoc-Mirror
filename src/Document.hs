@@ -23,7 +23,7 @@ data Header = Header {
 data FormatType = Italic | Bold | Code
 
 data Link = Link {
-    label :: String,
+    label :: Content,
     link :: String
 }
 

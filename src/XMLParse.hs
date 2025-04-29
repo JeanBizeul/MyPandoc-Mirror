@@ -75,7 +75,7 @@ parseBalise = do
     title <- parseTitle
     argtag <- consumeWhitespaces parseArgTag
     argcontent <- consumeXMLWhitespaces parseArgContent
-    symbolRev '>'
+    symbol '>'
     return (Balise title (Just [(BaliseArg argtag (Just argcontent))]))
 
 parseSimpleBalise :: Parser Balise
@@ -84,3 +84,10 @@ parseSimpleBalise = do
     title <- parseTitle
     symbolRev '>'
     return (Balise title Nothing)
+
+--  <document>
+--  <header title="Simple example"></header>
+--  <body>
+--  <paragraph>This is a simple example</paragraph>
+--  </body>
+--  </document>

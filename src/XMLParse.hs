@@ -21,7 +21,7 @@ import GeneralParse
 import Data.Char
 import Data.List
 import Control.Applicative (many)
-
+import Debug.Trace
 
 data BaliseArg = BaliseArg {
     baliseArgTag :: String,
@@ -69,6 +69,16 @@ parseArgContent = Parser f
          then Nothing
          else Just (argcontent, rest)
 
+parseRest :: Parser String
+parseRest = Parser f
+  where
+    f [] = Just ("", "")
+    f input =
+      let (argcontent, rest) = span (\c -> c /= '\0') input
+      in if null argcontent
+         then Nothing
+         else Just (argcontent, rest)
+
 parseBalise :: Parser Balise
 parseBalise = do
     symbol '<'
@@ -76,18 +86,46 @@ parseBalise = do
     argtag <- consumeWhitespaces parseArgTag
     argcontent <- consumeXMLWhitespaces parseArgContent
     symbol '>'
-    return (Balise title (Just [(BaliseArg argtag (Just argcontent))]))
+    rest <- parseRest
+    return (trace (show rest) (Balise title
+        (Just [(BaliseArg argtag (Just argcontent))])))
 
 parseSimpleBalise :: Parser Balise
 parseSimpleBalise = do
     symbol '<'
     title <- parseTitle
-    symbolRev '>'
+    symbol '>'
     return (Balise title Nothing)
 
+parseContentBetween :: Parser String
+parseContentBetween = Parser f
+  where
+    f [] = Nothing
+    f input =
+      let (content, rest) = span (\c -> c /= '<') input
+      in if null content
+         then Nothing
+         else Just (content, rest)
+
+parseDoubleBalise :: Parser Balise
+parseDoubleBalise = do
+    title <- parseSimpleBalise
+    content <- parseContentBetween
+    parseSimpleBalise
+    return(Balise (baliseTitle title) (Just [(BaliseArg "content" (Just content))]))
+
 --  <document>
---  <header title="Simple example"></header>
+--  <header title=\"Simple example\"></header>
 --  <body>
 --  <paragraph>This is a simple example</paragraph>
 --  </body>
 --  </document>
+
+
+--Order of magnitude
+--
+--DoubleBalise : fail at simple balise and balise with args
+--
+--Balise : fail at simple balise but success at double balise
+--
+--SimpleBalise : Always successful

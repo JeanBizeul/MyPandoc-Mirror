@@ -34,8 +34,13 @@ data Image = Image {
 
 newtype Paragraph = Paragraph [Content]
 
+data Title = Title {
+    titleText :: String,
+    titleLevel :: Int
+}
+
 data Section = Section {
-    sectionTitle :: Maybe String,
+    sectionTitle :: Maybe Title,
     sectionBody :: [Content]
 }
 
@@ -50,6 +55,7 @@ newtype List = List [Item]
 
 data Content =
     Text String
+    | TitleContent Title
     | Formatted FormatType Content
     | LinkContent Link
     | ImageContent Image

@@ -5,7 +5,7 @@
 -- OptsParsing
 -}
 
-module OptsParsing (Options(..), opts) where
+module OptsParsing (Options(..), FileFormat(..), opts) where
 
 import Options.Applicative (Parser, strOption, long, short, metavar, help, optional, execParser, info, fullDesc, eitherReader, option, ReadM)
 

@@ -111,15 +111,17 @@ parseSimpleBalise = do
     parseRestIncorrect
     return (Balise title Nothing)
 
-parseContentBetween :: Parser String
-parseContentBetween = Parser f
+parseContentBetween :: String -> Parser String
+parseContentBetween stopStr = Parser f
   where
-    f [] = Nothing
-    f input =
-      let (content, rest) = span (\c -> c /= '<') input
-      in if null content
-         then Nothing
-         else Just (content, rest)
+    f input = go "" input
+      where
+        go acc rest
+          | stopStr `isPrefixOf` rest = Just (reverse acc, rest)
+          | null rest = Nothing
+          | otherwise =
+              let (c:cs) = rest
+              in go (c:acc) cs
 
 getTitleBalise :: Parser Balise
 getTitleBalise = do
@@ -128,13 +130,44 @@ getTitleBalise = do
     symbol '>'
     return (Balise title Nothing)
 
+stringToBaliseArg :: String -> BaliseArg
+stringToBaliseArg str =
+  case runParser parseDoubleBalise str of
+    Just (Balise title (Just [BaliseArg _ content]), _) ->
+      BaliseArg title content
+    _ -> BaliseArg "error" Nothing
+
+parseBaliseArgs :: String -> String -> [BaliseArg]
+parseBaliseArgs parentTag input = go input []
+  where
+    go "" acc = reverse acc
+    go rest acc =
+      case runParser parseDoubleBaliseTwo rest of
+        Just (Balise tag (Just args), remaining) ->
+          go (dropWhile isSpace remaining) (acc ++ args)
+        Just (_, remaining) ->
+          go (dropWhile isSpace remaining) acc
+        Nothing -> reverse acc
+
+parseDoubleBaliseTwo :: Parser Balise
+parseDoubleBaliseTwo = do
+    title <- getTitleBalise
+    content <- parseContentBetween ("<" ++ "/" ++ (baliseTitle title) ++ ">")
+    getTitleBalise
+    return (Balise (baliseTitle title)
+      (Just [(BaliseArg (baliseTitle title) (Just content))]))
+
 parseDoubleBalise :: Parser Balise
 parseDoubleBalise = do
     title <- getTitleBalise
-    content <- parseContentBetween
-    getTitleBalise
-    return (Balise (baliseTitle title)
-      (Just [(BaliseArg "content" (Just content))]))
+    let closing = "</" ++ baliseTitle title ++ ">"
+    content <- parseContentBetween closing
+    _ <- parseString closing
+    let innerArgs = parseBaliseArgs (baliseTitle title) content
+    let finalArgs = if null innerArgs
+                    then [BaliseArg (baliseTitle title) (Just content)]
+                    else innerArgs
+    return (Balise (baliseTitle title) (Just finalArgs))
 
 parseOr:: Parser a -> Parser a -> Parser a
 parseOr (Parser p1) (Parser p2) = Parser $ \input ->

@@ -133,7 +133,8 @@ parseDoubleBalise = do
     title <- getTitleBalise
     content <- parseContentBetween
     getTitleBalise
-    return(Balise (baliseTitle title) (Just [(BaliseArg "content" (Just content))]))
+    return (Balise (baliseTitle title)
+      (Just [(BaliseArg "content" (Just content))]))
 
 parseOr:: Parser a -> Parser a -> Parser a
 parseOr (Parser p1) (Parser p2) = Parser $ \input ->

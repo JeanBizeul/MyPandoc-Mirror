@@ -35,9 +35,6 @@ spec = do
             runParser parseBalise "<balise>" `shouldBe` Nothing
         it "On a double balise" $ do
             runParser parseBalise "<paragraph>example</paragraph>" `shouldBe` Nothing
-
-
-
     describe "parseDoubleBalise" $ do
         it "correct" $ do
             runParser parseDoubleBalise "<paragraph>example</paragraph>" `shouldBe` Just (Balise {baliseTitle = "paragraph", baliseArgs = Just [BaliseArg {baliseArgTag = "content", baliseArgContent = Just "example"}]},"")
@@ -55,9 +52,6 @@ spec = do
             runParser parseDoubleBalise "<balise>" `shouldBe` Nothing
         it "On a double balise" $ do
             runParser parseDoubleBalise "<balise title=\"example\"></balise>" `shouldBe` Nothing
-
-
-
     describe "parseXML simple balise" $ do
         it "Correct" $ do
             runParser parseXML "<balise>" `shouldBe` Just (Balise {baliseTitle = "balise", baliseArgs = Nothing},"")

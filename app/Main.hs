@@ -57,11 +57,12 @@ main = do
     options <- execParser (info (opts <**> helper) fullDesc)
     inputFile <- readFile (inputFilePath options)
     case parseFile inputFile (inputFileFormat options) of
-        Nothing -> putStrLn "Failed to parse the input file."
-            >> exitWith (ExitFailure 84)
+        Nothing -> exitWithError "Failed to parse the input file."
         Just doc -> case writeDocument doc (outputFileFormat options) of
-            Nothing -> putStrLn "Failed to generate the output file."
-                >> exitWith (ExitFailure 84)
+            Nothing -> exitWithError "Failed to generate the output file."
             Just output -> case outputFilePath options of
                 Just path -> writeFile path output
                 Nothing   -> putStrLn output
+
+exitWithError :: String -> IO ()
+exitWithError msg = putStrLn msg >> exitWith (ExitFailure 84)

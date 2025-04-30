@@ -18,11 +18,6 @@ stringToFileFormat "xml"     = Just XML
 stringToFileFormat "json"    = Just JSON
 stringToFileFormat _         = Nothing
 
-fileFormatReader :: ReadM FileFormat
-fileFormatReader = eitherReader $ \arg -> case stringToFileFormat arg of
-        Just format -> Right format
-        Nothing     -> Left $ "Invalid file format: " ++ arg
-
 data Options = Options {
     inputFilePath :: String,
     outputFileFormat :: FileFormat,
@@ -30,28 +25,42 @@ data Options = Options {
     inputFileFormat :: Maybe FileFormat
 } deriving (Show)
 
+fileFormatReader :: ReadM FileFormat
+fileFormatReader = eitherReader $ \arg -> case stringToFileFormat arg of
+        Just format -> Right format
+        Nothing     -> Left $ "Invalid file format: " ++ arg
+
 opts :: Parser Options
 opts = Options
-    <$> strOption
-        ( long "input"
-        <> short 'i'
-        <> metavar "FILEPATH"
-        <> help "Path to the input file" )
+    <$> inputFileParser
+    <*> outputFormatParser
+    <*> outputFileParser
+    <*> inputFormatParser
 
-    <*> option fileFormatReader
-        ( long "output-format"
-        <> short 'f'
-        <> metavar "FORMAT"
-        <> help "Output file format (markdown, XML or JSON)" )
+inputFileParser :: Parser String
+inputFileParser = strOption
+    ( long "input"
+    <> short 'i'
+    <> metavar "FILEPATH"
+    <> help "Path to the input file" )
 
-    <*> optional (strOption
-        ( long "output"
-        <> short 'o'
-        <> metavar "FILEPATH"
-        <> help "Path to the output file" ))
+outputFormatParser :: Parser FileFormat
+outputFormatParser = option fileFormatReader
+    ( long "output-format"
+    <> short 'f'
+    <> metavar "FORMAT"
+    <> help "Output file format (markdown, XML or JSON)" )
 
-    <*> optional (option fileFormatReader
+outputFileParser :: Parser (Maybe String)
+outputFileParser =  optional $ strOption
+    ( long "output"
+    <> short 'o'
+    <> metavar "FILEPATH"
+    <> help "Path to the output file" )
+
+inputFormatParser :: Parser (Maybe FileFormat)
+inputFormatParser =  optional $ option fileFormatReader
         ( long "input-format"
         <> short 'e'
         <> metavar "FORMAT"
-        <> help "Input file format (markdown, XML or JSON)" ))
+        <> help "Input file format (markdown, XML or JSON)" )

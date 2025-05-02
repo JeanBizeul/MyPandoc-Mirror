@@ -25,7 +25,7 @@ import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Bool
-import Control.Applicative (many, empty)
+import Control.Applicative (some, many, empty, (<|>), optional, Alternative(..))
 import Debug.Trace
 import Control.Monad
 
@@ -180,14 +180,6 @@ parseOr (Parser p1) (Parser p2) = Parser $ \input ->
 parseXML :: Parser Balise
 parseXML = parseDoubleBalise `parseOr` parseBalise `parseOr` parseSimpleBalise
 
---Order of magnitude
---
---DoubleBalise : fail at simple balise and balise with args
---
---Balise : fail at simple balise but success at double balise
---
---SimpleBalise : Always successful
-
 parseQuotedString :: Parser String
 parseQuotedString = do
   symbol '"'
@@ -215,8 +207,8 @@ parseHeaderStart = do
     symbol '>'
     return (title, attrs)
 
-parseHeaderDoc :: Parser Header
-parseHeaderDoc = do
+parseXMLHeaderDoc :: Parser Header
+parseXMLHeaderDoc = do
   (tag, attrs) <- parseHeaderStart
   guard (tag == "header")
   let titleValue = lookup "title" attrs
@@ -228,6 +220,182 @@ parseHeaderDoc = do
   let authorValue = lookup "author" [(baliseArgTag a, fromJust (baliseArgContent a)) | a <- childArgs, isJust (baliseArgContent a)]
   let dateValueStr = lookup "date" [(baliseArgTag a, fromJust (baliseArgContent a)) | a <- childArgs, isJust (baliseArgContent a)]
   let dateValue = fmap Date dateValueStr
+  parseString ("</" ++ tag ++ ">")
   case titleValue of
     Just t  -> return $ Header t authorValue dateValue
     Nothing -> empty
+
+parseDocumentStart :: Parser Balise
+parseDocumentStart = do
+    symbol '<'
+    title <- parseTitle
+    guard (title == "document")
+    symbol '>'
+    return (Balise title Nothing)
+
+parseDocumentEnd :: Parser String
+parseDocumentEnd = do
+  parseString "</document>"
+
+parseXMLDocument :: Parser Document
+parseXMLDocument = do
+  parseDocumentStart
+  header <- parseXMLHeaderDoc
+  bodyContent <- many parseContent
+  parseDocumentEnd
+  return $ Document header bodyContent
+
+parseContent :: Parser Content
+parseContent =
+      try (SectionContent <$> parseSection)
+  <|> try (TitleContent <$> parseTitleTag)
+  <|> try (LinkContent <$> parseLink)
+  <|> try (ImageContent <$> parseImage)
+  <|> try (CodeBlockContent <$> parseCodeBlock)
+  <|> try (ListContent <$> parseList)
+  <|> try (ParagraphContent <$> parseParagraph)
+  <|> try (Text <$> parsePlainText)
+
+parseParagraph :: Parser Paragraph
+parseParagraph = do
+  traceM "Trying to parse <paragraph>"
+  parseString "<paragraph>"
+  contents <- many parseContent
+  parseString "</paragraph>"
+  return $ Paragraph contents
+
+parseSection :: Parser Section
+parseSection = do
+  traceM "Trying to parse <section>"
+  parseString "<section>"
+  mTitle <- optional (TitleContent <$> parseTitleTag)
+  contents <- many parseContent
+  parseString "</section>"
+  traceShow contents (return $ Section (case mTitle of
+                      Just (TitleContent t) -> Just t
+                      _ -> Nothing)
+                   contents)
+
+parseImage :: Parser Image
+parseImage = do
+  traceM "Trying to parse <image>"
+  parseString "<image"
+  consumeWhitespacesDoc
+  alt <- optional $ do
+    parseString "alt=\""
+    a <- parseUntilChar '"'
+    parseChar '"'
+    consumeWhitespacesDoc
+    return a
+  parseString "url=\""
+  url <- parseUntilChar '"'
+  parseChar '"'
+  parseString ">"
+  textContent <- many parseContent
+  parseString "</image>"
+  return $ Image (fromMaybe "" alt) url
+
+parsePlainText :: Parser String
+parsePlainText = Parser $ \input ->
+  let (txt, rest) = span (/= '<') input
+  in if null txt then Nothing else Just (txt, rest)
+
+parseTitleTag :: Parser Title
+parseTitleTag = do
+  traceM "Trying to parse <title>"
+  parseString "<title"
+  consumeWhitespacesDoc
+  parseString "level=\""
+  levelStr <- some (satisfy isDigit)
+  parseChar '"'
+  parseChar '>'
+  txt <- parseUntilString "</title>"
+  return $ Title (trim txt) (read levelStr)
+
+parseLink :: Parser Link
+parseLink = do
+  traceM "Trying to parse <link>"
+  parseString "<link"
+  consumeWhitespacesDoc
+  parseString "url=\""
+  url <- parseUntilChar '"'
+  parseChar '"'
+  parseChar '>'
+  lbl <- parseContent
+  parseString "</link>"
+  return $ (Link lbl url)
+
+
+parseCodeBlock :: Parser CodeBlock
+parseCodeBlock = do
+  traceM "Trying to parse <codeblock>"
+  parseString "<code"
+  consumeWhitespacesDoc
+  lang <- optional $ do
+    parseString "language=\""
+    l <- parseUntilChar '"'
+    parseChar '"'
+    return l
+  parseChar '>'
+  body <- parseUntilString "</code>"
+  parseString "</code>"
+  return $ CodeBlock body lang
+
+parseItem :: Parser Item
+parseItem = do
+  traceM "Trying to parse <item>"
+  parseString "<item>"
+  cs <- many parseContent
+  parseString "</item>"
+  return $ Item cs
+
+parseList :: Parser List
+parseList = do
+  traceM "Trying to parse <list>"
+  parseString "<list>"
+  items <- many parseItem
+  parseString "</list>"
+  return $ List items
+
+parseUntilChar :: Char -> Parser String
+parseUntilChar c = Parser $ \input ->
+  let (before, rest) = span (/= c) input
+  in case rest of
+       [] -> Nothing
+       (_:rs) -> Just (before, rs)
+
+parseUntilString :: String -> Parser String
+parseUntilString end = Parser $ \input ->
+  let (prefix, rest) = breakOn end input
+  in if null rest then Nothing else Just (prefix, drop (length end) rest)
+
+-- Break on a substring
+breakOn :: String -> String -> (String, String)
+breakOn needle haystack = go "" haystack
+  where
+    go acc [] = (acc, "")
+    go acc xs@(y:ys)
+      | needle `isPrefixOf` xs = (acc, xs)
+      | otherwise = go (acc ++ [y]) ys
+
+trim :: String -> String
+trim = f . f where f = reverse . dropWhile isSpace
+
+satisfy :: (Char -> Bool) -> Parser Char
+satisfy p = Parser f
+  where
+    f [] = Nothing
+    f (x:xs)
+      | p x       = Just (x, xs)
+      | otherwise = Nothing
+
+consumeWhitespacesDoc :: Parser ()
+consumeWhitespacesDoc = Parser $ \input ->
+  let (_, rest) = span isSpace input
+  in Just ((), rest)
+
+try :: Parser a -> Parser a
+try (Parser p) = Parser $ \input ->
+  case p input of
+    Nothing -> Nothing
+    success -> success

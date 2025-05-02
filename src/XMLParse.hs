@@ -237,11 +237,19 @@ parseDocumentEnd :: Parser String
 parseDocumentEnd = do
   parseString "</document>"
 
+parseBody :: Parser [Content]
+parseBody = do
+    parseString ("<body>")
+    contents <- many parseContent
+    parseString ("</body>")
+    return contents
+
+
 parseXMLDocument :: Parser Document
 parseXMLDocument = do
   parseDocumentStart
   header <- parseXMLHeaderDoc
-  bodyContent <- many parseContent
+  bodyContent <- parseBody
   parseDocumentEnd
   return $ Document header bodyContent
 

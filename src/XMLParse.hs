@@ -215,11 +215,11 @@ parseXMLHeaderDoc = do
   content <- parseContentBetween ("</" ++ tag ++ ">")
   let cA = parseBaliseArgs tag content
   let validTags = ["author", "date"]
-  let childTags = map bT chArg
+  let childTags = map bT cA
   guard (all (`elem` validTags) childTags)
   let al = lookup "author" [(bT a, fromJust (bC a)) | a <- cA, isJust (bC a)]
   let dS = lookup "date" [(bT a, fromJust (bC a)) | a <- cA, isJust (bC a)]
-  let dateValue = fmap Date dateValueStr
+  let dateValue = fmap Date dS
   parseString ("</" ++ tag ++ ">")
   case titleValue of
     Just t  -> return $ Header t al dateValue
@@ -288,13 +288,19 @@ parseImage = do
   traceM "Trying to parse <image>"
   parseString "<image"
   consumeWhitespacesDoc
+  alt <- optional $ do
+    parseString "alt=\""
+    a <- parseUntilChar '"'
+    parseChar '"'
+    consumeWhitespacesDoc
+    return a
   parseString "url=\""
   url <- parseUntilChar '"'
   parseChar '"'
   parseString ">"
   textContent <- many parseContent
   parseString "</image>"
-  return $ Image url
+  return $ Image (fromMaybe "" alt) url
 
 parsePlainText :: Parser String
 parsePlainText = Parser $ \input ->
@@ -326,11 +332,17 @@ parseLink = do
   parseString "</link>"
   return $ (Link lbl url)
 
+
 parseCodeBlock :: Parser CodeBlock
 parseCodeBlock = do
   traceM "Trying to parse <codeblock>"
   parseString "<code"
   consumeWhitespacesDoc
+  lang <- optional $ do
+    parseString "language=\""
+    l <- parseUntilChar '"'
+    parseChar '"'
+    return l
   parseChar '>'
   body <- parseUntilString "</code>"
   parseString "</code>"

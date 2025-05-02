@@ -37,7 +37,9 @@ spec = do
             runParser parseBalise "<paragraph>example</paragraph>" `shouldBe` Nothing
     describe "parseDoubleBalise" $ do
         it "correct" $ do
-            runParser parseDoubleBalise "<paragraph>example</paragraph>" `shouldBe` Just (Balise {baliseTitle = "paragraph", baliseArgs = Just [BaliseArg {baliseArgTag = "content", baliseArgContent = Just "example"}]},"")
+            runParser parseDoubleBalise "<paragraph>example</paragraph>" `shouldBe` Just (Balise {baliseTitle = "paragraph", baliseArgs = Just [BaliseArg {baliseArgTag = "paragraph", baliseArgContent = Just "example"}]},"")
+        it "Balise between balise" $ do
+            runParser parseDoubleBalise "<paragraph><test>example</test></paragraph>" `shouldBe` Just (Balise {baliseTitle = "paragraph", baliseArgs = Just [BaliseArg {baliseArgTag = "test", baliseArgContent = Just "example"}]},"")
         it "Without end balise" $ do
             runParser parseDoubleBalise "<paragraph>example" `shouldBe` Nothing
         it "No < first balise" $ do
@@ -74,7 +76,9 @@ spec = do
             runParser parseXML "<balise title=\"example\"" `shouldBe` Nothing
     describe "parseXML double balise" $ do
         it "correct" $ do
-            runParser parseXML "<paragraph>example</paragraph>" `shouldBe` Just (Balise {baliseTitle = "paragraph", baliseArgs = Just [BaliseArg {baliseArgTag = "content", baliseArgContent = Just "example"}]},"")
+            runParser parseXML "<paragraph>example</paragraph>" `shouldBe` Just (Balise {baliseTitle = "paragraph", baliseArgs = Just [BaliseArg {baliseArgTag = "paragraph", baliseArgContent = Just "example"}]},"")
+        it "Balise between balise" $ do
+            runParser parseXML "<paragraph><test>example</test></paragraph>" `shouldBe` Just (Balise {baliseTitle = "paragraph", baliseArgs = Just [BaliseArg {baliseArgTag = "test", baliseArgContent = Just "example"}]},"")
         it "Without end balise" $ do
             runParser parseXML "<paragraph>example" `shouldBe` Nothing
         it "No < first balise" $ do

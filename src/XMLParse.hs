@@ -20,12 +20,14 @@ module XMLParse (
 ) where
 
 import GeneralParse
+import Document
 import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Bool
-import Control.Applicative (many)
+import Control.Applicative (many, empty)
 import Debug.Trace
+import Control.Monad
 
 data BaliseArg = BaliseArg {
     baliseArgTag :: String,
@@ -185,3 +187,47 @@ parseXML = parseDoubleBalise `parseOr` parseBalise `parseOr` parseSimpleBalise
 --Balise : fail at simple balise but success at double balise
 --
 --SimpleBalise : Always successful
+
+parseQuotedString :: Parser String
+parseQuotedString = do
+  symbol '"'
+  content <- many (Parser f)
+  symbol '"'
+  return content
+  where
+    f [] = Nothing
+    f ('"':_) = Nothing
+    f (x:xs)  = Just (x, xs)
+
+parseAttribute :: Parser (String, String)
+parseAttribute = do
+  consumeWhitespaces (return ())
+  key <- parseArgTag
+  symbol '='
+  value <- parseQuotedString
+  return (key, value)
+
+parseHeaderStart :: Parser (String, [(String, String)])
+parseHeaderStart = do
+    symbol '<'
+    title <- parseTitle
+    attrs <- many parseAttribute
+    symbol '>'
+    return (title, attrs)
+
+parseHeaderDoc :: Parser Header
+parseHeaderDoc = do
+  (tag, attrs) <- parseHeaderStart
+  guard (tag == "header")
+  let titleValue = lookup "title" attrs
+  content <- parseContentBetween ("</" ++ tag ++ ">")
+  let childArgs = parseBaliseArgs tag content
+  let validTags = ["author", "date"]
+  let childTags = map baliseArgTag childArgs
+  guard (all (`elem` validTags) childTags)
+  let authorValue = lookup "author" [(baliseArgTag a, fromJust (baliseArgContent a)) | a <- childArgs, isJust (baliseArgContent a)]
+  let dateValueStr = lookup "date" [(baliseArgTag a, fromJust (baliseArgContent a)) | a <- childArgs, isJust (baliseArgContent a)]
+  let dateValue = fmap Date dateValueStr
+  case titleValue of
+    Just t  -> return $ Header t authorValue dateValue
+    Nothing -> empty

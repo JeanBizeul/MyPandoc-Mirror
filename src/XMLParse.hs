@@ -30,13 +30,13 @@ import Debug.Trace
 import Control.Monad
 
 data BaliseArg = BaliseArg {
-    baliseArgTag :: String,
-    baliseArgContent :: Maybe String
+    bT :: String,
+    bC :: Maybe String
 }deriving (Show, Eq)
 
 data Balise = Balise {
-    baliseTitle :: String,
-    baliseArgs :: Maybe [BaliseArg]
+    balTit :: String,
+    balArg :: Maybe [BaliseArg]
 }deriving (Show, Eq)
 
 parseXMLWhitespaces :: Parser ()
@@ -154,22 +154,22 @@ parseBaliseArgs parentTag input = go input []
 parseDoubleBaliseTwo :: Parser Balise
 parseDoubleBaliseTwo = do
     title <- getTitleBalise
-    content <- parseContentBetween ("<" ++ "/" ++ (baliseTitle title) ++ ">")
+    content <- parseContentBetween ("<" ++ "/" ++ (balTit title) ++ ">")
     getTitleBalise
-    return (Balise (baliseTitle title)
-      (Just [(BaliseArg (baliseTitle title) (Just content))]))
+    return (Balise (balTit title)
+      (Just [(BaliseArg (balTit title) (Just content))]))
 
 parseDoubleBalise :: Parser Balise
 parseDoubleBalise = do
     title <- getTitleBalise
-    let closing = "</" ++ baliseTitle title ++ ">"
+    let closing = "</" ++ balTit title ++ ">"
     content <- parseContentBetween closing
     _ <- parseString closing
-    let innerArgs = parseBaliseArgs (baliseTitle title) content
+    let innerArgs = parseBaliseArgs (balTit title) content
     let finalArgs = if null innerArgs
-                    then [BaliseArg (baliseTitle title) (Just content)]
+                    then [BaliseArg (balTit title) (Just content)]
                     else innerArgs
-    return (Balise (baliseTitle title) (Just finalArgs))
+    return (Balise (balTit title) (Just finalArgs))
 
 parseOr:: Parser a -> Parser a -> Parser a
 parseOr (Parser p1) (Parser p2) = Parser $ \input ->
@@ -213,16 +213,16 @@ parseXMLHeaderDoc = do
   guard (tag == "header")
   let titleValue = lookup "title" attrs
   content <- parseContentBetween ("</" ++ tag ++ ">")
-  let childArgs = parseBaliseArgs tag content
+  let cA = parseBaliseArgs tag content
   let validTags = ["author", "date"]
-  let childTags = map baliseArgTag childArgs
+  let childTags = map bT chArg
   guard (all (`elem` validTags) childTags)
-  let authorValue = lookup "author" [(baliseArgTag a, fromJust (baliseArgContent a)) | a <- childArgs, isJust (baliseArgContent a)]
-  let dateValueStr = lookup "date" [(baliseArgTag a, fromJust (baliseArgContent a)) | a <- childArgs, isJust (baliseArgContent a)]
+  let al = lookup "author" [(bT a, fromJust (bC a)) | a <- cA, isJust (bC a)]
+  let dS = lookup "date" [(bT a, fromJust (bC a)) | a <- cA, isJust (bC a)]
   let dateValue = fmap Date dateValueStr
   parseString ("</" ++ tag ++ ">")
   case titleValue of
-    Just t  -> return $ Header t authorValue dateValue
+    Just t  -> return $ Header t al dateValue
     Nothing -> empty
 
 parseDocumentStart :: Parser Balise
@@ -234,8 +234,7 @@ parseDocumentStart = do
     return (Balise title Nothing)
 
 parseDocumentEnd :: Parser String
-parseDocumentEnd = do
-  parseString "</document>"
+parseDocumentEnd = parseString "</document>"
 
 parseBody :: Parser [Content]
 parseBody = do
@@ -289,19 +288,13 @@ parseImage = do
   traceM "Trying to parse <image>"
   parseString "<image"
   consumeWhitespacesDoc
-  alt <- optional $ do
-    parseString "alt=\""
-    a <- parseUntilChar '"'
-    parseChar '"'
-    consumeWhitespacesDoc
-    return a
   parseString "url=\""
   url <- parseUntilChar '"'
   parseChar '"'
   parseString ">"
   textContent <- many parseContent
   parseString "</image>"
-  return $ Image (fromMaybe "" alt) url
+  return $ Image url
 
 parsePlainText :: Parser String
 parsePlainText = Parser $ \input ->
@@ -333,17 +326,11 @@ parseLink = do
   parseString "</link>"
   return $ (Link lbl url)
 
-
 parseCodeBlock :: Parser CodeBlock
 parseCodeBlock = do
   traceM "Trying to parse <codeblock>"
   parseString "<code"
   consumeWhitespacesDoc
-  lang <- optional $ do
-    parseString "language=\""
-    l <- parseUntilChar '"'
-    parseChar '"'
-    return l
   parseChar '>'
   body <- parseUntilString "</code>"
   parseString "</code>"

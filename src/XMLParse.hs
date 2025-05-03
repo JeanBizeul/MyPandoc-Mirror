@@ -310,7 +310,7 @@ parseLink = do
   url <- parseUntilChar '"'
   parseChar '"'
   parseChar '>'
-  lbl <- parseContent
+  lbl <- many parseContent
   parseString "</link>"
   return $ (Link lbl url)
 

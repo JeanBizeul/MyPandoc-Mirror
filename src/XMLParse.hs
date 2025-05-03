@@ -211,19 +211,27 @@ parseXMLHeaderDoc :: Parser Header
 parseXMLHeaderDoc = do
   (tag, attrs) <- parseHeaderStart
   guard (tag == "header")
-  let titleValue = lookup "title" attrs
   content <- parseContentBetween ("</" ++ tag ++ ">")
-  let cA = parseBaliseArgs tag content
-  let validTags = ["author", "date"]
-  let childTags = map bT cA
-  guard (all (`elem` validTags) childTags)
-  let al = lookup "author" [(bT a, fromJust (bC a)) | a <- cA, isJust (bC a)]
-  let dS = lookup "date" [(bT a, fromJust (bC a)) | a <- cA, isJust (bC a)]
-  let dateValue = fmap Date dS
-  parseString ("</" ++ tag ++ ">")
-  case titleValue of
-    Just t  -> return $ Header t al dateValue
-    Nothing -> empty
+  buildHeaderFrom tag attrs content
+
+buildHeaderFrom :: String -> [(String, String)] -> String -> Parser Header
+buildHeaderFrom tag attrs content =
+  let titleValue = lookup "title" attrs
+      cA = parseBaliseArgs tag content
+      al = extractTag "author" cA
+      dateValue = fmap Date (extractTag "date" cA)
+  in guard (validTags cA) >>
+     parseString ("</" ++ tag ++ ">") >>
+     maybe empty (\t -> return (Header t al dateValue)) titleValue
+
+validTags :: [BaliseArg] -> Bool
+validTags cA =
+  let validTagsList = ["author", "date"]
+  in all (\t -> bT t `elem` validTagsList) cA
+
+extractTag :: String -> [BaliseArg] -> Maybe String
+extractTag tagName args =
+  lookup tagName [(bT a, fromJust (bC a)) | a <- args, isJust (bC a)]
 
 parseDocumentStart :: Parser Balise
 parseDocumentStart = do
@@ -243,7 +251,6 @@ parseBody = do
     parseString ("</body>")
     return contents
 
-
 parseXMLDocument :: Parser Document
 parseXMLDocument = do
   parseDocumentStart
@@ -257,15 +264,12 @@ parseContent =
       try (SectionContent <$> parseSection)
   <|> try (TitleContent <$> parseTitleTag)
   <|> try (LinkContent <$> parseLink)
-  <|> try (ImageContent <$> parseImage)
-  <|> try (CodeBlockContent <$> parseCodeBlock)
   <|> try (ListContent <$> parseList)
   <|> try (ParagraphContent <$> parseParagraph)
   <|> try (Text <$> parsePlainText)
 
 parseParagraph :: Parser Paragraph
 parseParagraph = do
-  traceM "Trying to parse <paragraph>"
   parseString "<paragraph>"
   contents <- many parseContent
   parseString "</paragraph>"
@@ -273,34 +277,14 @@ parseParagraph = do
 
 parseSection :: Parser Section
 parseSection = do
-  traceM "Trying to parse <section>"
   parseString "<section>"
   mTitle <- optional (TitleContent <$> parseTitleTag)
   contents <- many parseContent
   parseString "</section>"
-  traceShow contents (return $ Section (case mTitle of
+  return $ Section (case mTitle of
                       Just (TitleContent t) -> Just t
                       _ -> Nothing)
-                   contents)
-
-parseImage :: Parser Image
-parseImage = do
-  traceM "Trying to parse <image>"
-  parseString "<image"
-  consumeWhitespacesDoc
-  alt <- optional $ do
-    parseString "alt=\""
-    a <- parseUntilChar '"'
-    parseChar '"'
-    consumeWhitespacesDoc
-    return a
-  parseString "url=\""
-  url <- parseUntilChar '"'
-  parseChar '"'
-  parseString ">"
-  textContent <- many parseContent
-  parseString "</image>"
-  return $ Image (fromMaybe "" alt) url
+                   contents
 
 parsePlainText :: Parser String
 parsePlainText = Parser $ \input ->
@@ -309,7 +293,6 @@ parsePlainText = Parser $ \input ->
 
 parseTitleTag :: Parser Title
 parseTitleTag = do
-  traceM "Trying to parse <title>"
   parseString "<title"
   consumeWhitespacesDoc
   parseString "level=\""
@@ -321,7 +304,6 @@ parseTitleTag = do
 
 parseLink :: Parser Link
 parseLink = do
-  traceM "Trying to parse <link>"
   parseString "<link"
   consumeWhitespacesDoc
   parseString "url=\""
@@ -332,25 +314,8 @@ parseLink = do
   parseString "</link>"
   return $ (Link lbl url)
 
-
-parseCodeBlock :: Parser CodeBlock
-parseCodeBlock = do
-  traceM "Trying to parse <codeblock>"
-  parseString "<code"
-  consumeWhitespacesDoc
-  lang <- optional $ do
-    parseString "language=\""
-    l <- parseUntilChar '"'
-    parseChar '"'
-    return l
-  parseChar '>'
-  body <- parseUntilString "</code>"
-  parseString "</code>"
-  return $ CodeBlock body lang
-
 parseItem :: Parser Item
 parseItem = do
-  traceM "Trying to parse <item>"
   parseString "<item>"
   cs <- many parseContent
   parseString "</item>"
@@ -358,7 +323,6 @@ parseItem = do
 
 parseList :: Parser List
 parseList = do
-  traceM "Trying to parse <list>"
   parseString "<list>"
   items <- many parseItem
   parseString "</list>"
@@ -376,7 +340,6 @@ parseUntilString end = Parser $ \input ->
   let (prefix, rest) = breakOn end input
   in if null rest then Nothing else Just (prefix, drop (length end) rest)
 
--- Break on a substring
 breakOn :: String -> String -> (String, String)
 breakOn needle haystack = go "" haystack
   where

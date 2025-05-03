@@ -5,7 +5,7 @@
 -- XMLWriter
 -}
 
-module XMLParse (
+module XMLWriter (
     documentToXML
 ) where
 

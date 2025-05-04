@@ -17,6 +17,7 @@ import Data.Maybe
 
 writeXMLToFile :: String -> FilePath -> IO ()
 writeXMLToFile content filePath = writeFile filePath content
+
 documentToXML :: Document -> String
 documentToXML (Document h b) =
   "<document>\n" ++ headerToXML h ++

@@ -16,7 +16,8 @@ module XMLParse (
     parseBalise,
     parseSimpleBalise,
     parseDoubleBalise,
-    parseXML
+    parseXMLbalise,
+    parseXMLDocument
 ) where
 
 import GeneralParse
@@ -171,14 +172,14 @@ parseDoubleBalise = do
                     else innerArgs
     return (Balise (balTit title) (Just finalArgs))
 
-parseOr:: Parser a -> Parser a -> Parser a
-parseOr (Parser p1) (Parser p2) = Parser $ \input ->
+paOr:: Parser a -> Parser a -> Parser a
+paOr (Parser p1) (Parser p2) = Parser $ \input ->
     case p1 input of
         Just result -> Just result
         Nothing     -> p2 input
 
-parseXML :: Parser Balise
-parseXML = parseDoubleBalise `parseOr` parseBalise `parseOr` parseSimpleBalise
+parseXMLbalise :: Parser Balise
+parseXMLbalise = parseDoubleBalise `paOr` parseBalise `paOr` parseSimpleBalise
 
 parseQuotedString :: Parser String
 parseQuotedString = do

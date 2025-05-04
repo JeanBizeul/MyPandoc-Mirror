@@ -14,6 +14,8 @@ import OptsParsing (
 import Document (Document (body, Document, header), Header (Header, title, date, author))
 import System.Exit (exitWith)
 import GHC.IO.Exception (ExitCode(ExitFailure))
+import MarkdownParse (parseMarkdown)
+import MarkdownWrite (writeMarkdown)
 
 parseJSON :: String -> Maybe Document
 parseJSON _ = Just (Document {
@@ -25,19 +27,11 @@ parseXML _ = Just (Document {
     header=Header {title="XML title", date=Nothing, author=Nothing},
     body=[]})
 
-parseMarkdown :: String -> Maybe Document
-parseMarkdown _ = Just (Document {
-    header=Header {title="Markdown title", date=Nothing, author=Nothing},
-    body=[]})
-
 writeJSON :: Document -> Maybe String
 writeJSON _ = Just "JSON output"
 
 writeXML :: Document -> Maybe String
 writeXML _ = Just "XML output"
-
-writeMarkdown :: Document -> Maybe String
-writeMarkdown _ = Just "Markdown output"
 
 writeDocument :: Document -> FileFormat -> Maybe String
 writeDocument doc format = case format of

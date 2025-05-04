@@ -5,7 +5,7 @@
 -- Main
 -}
 
-import GeneralParse (runParserrunParser)
+import GeneralParse (runParser)
 import JsonParse (parseJsonValue, jsonToDocument)
 import Document
 import Options.Applicative (execParser, info, helper, fullDesc, (<**>))

@@ -34,11 +34,17 @@ data Header = Header {
     date :: Maybe Date
 } deriving (Show)
 
-data FormatType = Italic | Bold | Code
+data FormatType = Italic {
+    italicContent :: [Content]
+} | Bold {
+    boldContent :: [Content]
+} | Code {
+    codeContent :: String
+}
     deriving (Show)
 
 data Link = Link {
-    label :: Content,
+    label :: [Content],
     link :: String
 } deriving (Show)
 
@@ -60,7 +66,7 @@ data Section = Section {
 } deriving (Show)
 
 data CodeBlock = CodeBlock {
-    code :: String,
+    code :: [Content],
     language :: Maybe String
 } deriving (Show)
 

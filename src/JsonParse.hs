@@ -17,12 +17,16 @@ module JsonParse (
     parseKeyValue,
     parseJsonKey,
     parseJsonValue,
+    jsonToDocument
 ) where
 
 import GeneralParse
+import Document
 import Data.Char (isDigit, isSpace)
 import Data.List (stripPrefix)
 import Control.Applicative ((<|>), many, some, empty)
+import Data.Maybe (mapMaybe)
+import qualified Data.Map as M
 
 data JsonValue
     = JsonNull
@@ -150,3 +154,42 @@ parseJsonValue :: Parser JsonValue
 parseJsonValue = parseWhiteSpace *>
     (parseNull <|> parseBool <|> parseNumber <|> parseJsonString
         <|> parseJsonArray <|> parseJsonObject) <* parseWhiteSpace
+
+jsonToDocument :: JsonValue -> Maybe Document
+jsonToDocument (JsonObject obj) = do
+    let objMap = M.fromList obj
+    headerVal <- M.lookup "header" objMap
+    bodyVal <- M.lookup "body" objMap
+    header <- jsonToHeader headerVal
+    body <- jsonToContentList bodyVal
+    return $ Document header body
+jsonToDocument _ = Nothing
+
+jsonToHeader :: JsonValue -> Maybe Header
+jsonToHeader (JsonObject obj) = do
+    let objMap = M.fromList obj
+    JsonString title <- M.lookup "title" objMap
+    let author = case M.lookup "author" objMap of
+            Just (JsonString a) -> Just a
+            _                   -> Nothing
+    let date = case M.lookup "date" objMap of
+            Just (JsonString d) -> Just (Date d)
+            _                   -> Nothing
+    return $ Header title author date
+jsonToHeader _ = Nothing
+
+jsonToContentList :: JsonValue -> Maybe [Content]
+jsonToContentList (JsonArray values) = mapM jsonToContent values
+jsonToContentList _ = Nothing
+
+jsonToContent :: JsonValue -> Maybe Content
+jsonToContent (JsonObject obj) =
+    let objMap = M.fromList obj in
+    case M.lookup "type" objMap of
+        Just (JsonString "text") ->
+            case M.lookup "content" objMap of
+                Just (JsonString str) -> Just $ Text str
+                _ -> Nothing
+        _ -> Nothing
+jsonToContent (JsonString str) = Just (Text str)
+jsonToContent _ = Nothing

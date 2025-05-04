@@ -4,6 +4,7 @@ description: "It's our pandoc now John !"
 dependencies:
   - base >= 4.7 && < 5
   - optparse-applicative
+  - containers
 
 library:
   source-dirs: src
@@ -15,6 +16,7 @@ executables:
     ghc-options: -Wall
     dependencies:
       - mypandoc
+      - containers
 
 tests:
   unit-tests:

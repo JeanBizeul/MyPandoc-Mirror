@@ -16,6 +16,8 @@ import System.Exit (exitWith)
 import GHC.IO.Exception (ExitCode(ExitFailure))
 import XMLParse
 import XMLWriter
+import MarkdownParse (parseMarkdown)
+import MarkdownWrite (writeMarkdown)
 
 parseJSON :: String -> Maybe Document
 parseJSON _ = Just (Document {
@@ -27,19 +29,11 @@ parseXML str = case runParser parseXMLDocument str of
     Just (doc, _) -> Just doc
     Nothing       -> Nothing
 
-parseMarkdown :: String -> Maybe Document
-parseMarkdown _ = Just (Document {
-    header=Header {title="Markdown title", date=Nothing, author=Nothing},
-    body=[]})
-
 writeJSON :: Document -> Maybe String
 writeJSON _ = Just "JSON output"
 
 writeXML :: Document -> Maybe String
 writeXML doc = Just (documentToXML doc)
-
-writeMarkdown :: Document -> Maybe String
-writeMarkdown _ = Just "Markdown output"
 
 writeDocument :: Document -> FileFormat -> Maybe String
 writeDocument doc format = case format of

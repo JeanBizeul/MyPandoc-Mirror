@@ -51,6 +51,14 @@ parseChar c = Parser f
       | x == c = Just (c, xs)
       | otherwise = Nothing
 
+parseCharRev :: Char -> Parser Char
+parseCharRev c = Parser f
+  where
+    f [] = Nothing
+    f xs
+      | last xs == c = Just (c, init xs)
+      | otherwise    = Nothing
+
 parseAnyChar :: String -> Parser Char
 parseAnyChar s = Parser f
   where
@@ -90,6 +98,9 @@ consumeWhitespaces p = parseWhitespace *> p <* parseWhitespace
 
 symbol :: Char -> Parser Char
 symbol c = consumeWhitespaces (parseChar c)
+
+symbolRev :: Char -> Parser Char
+symbolRev c =  parseCharRev c
 
 parseTuple :: Parser a -> Parser (a, a)
 parseTuple p = do

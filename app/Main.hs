@@ -6,23 +6,29 @@
 -}
 
 import GeneralParse (runParser)
+import JsonParse (parseJsonValue, jsonToDocument)
+import Document
 import Options.Applicative (execParser, info, helper, fullDesc, (<**>))
+import Control.Applicative ((<|>))
 import OptsParsing (
     opts,
     Options (inputFilePath, inputFileFormat, outputFilePath, outputFileFormat),
     FileFormat (Markdown, XML, JSON))
-import Document (Document (body, Document, header), Header (Header, title, date, author))
 import System.Exit (exitWith)
 import GHC.IO.Exception (ExitCode(ExitFailure))
+import JsonWriter (documentToJson)
 import XMLParse
 import XMLWriter
 import MarkdownParse (parseMarkdown)
 import MarkdownWrite (writeMarkdown)
 
 parseJSON :: String -> Maybe Document
-parseJSON _ = Just (Document {
-    header=Header{title="JSON title", date=Nothing, author=Nothing},
-    body=[]})
+parseJSON str =
+    case runParser parseJsonValue str of
+        Just (jsonVal, rest)
+            | all (`elem` " \n\r\t") rest ->
+                jsonToDocument jsonVal
+        _ -> Nothing
 
 parseXML :: String -> Maybe Document
 parseXML str = case runParser parseXMLDocument str of
@@ -30,7 +36,7 @@ parseXML str = case runParser parseXMLDocument str of
     Nothing       -> Nothing
 
 writeJSON :: Document -> Maybe String
-writeJSON _ = Just "JSON output"
+writeJSON doc = Just (documentToJson doc)
 
 writeXML :: Document -> Maybe String
 writeXML doc = Just (documentToXML doc)
@@ -46,7 +52,10 @@ parseFile content (Just format) = case format of
     JSON     -> parseJSON content
     XML      -> parseXML content
     Markdown -> parseMarkdown content
-parseFile content Nothing = parseMarkdown content-- parseJSON content <|> parseXML content <|> parseMarkdown content
+parseFile content Nothing =
+    parseJSON content
+    <|> parseXML content
+    <|> parseMarkdown content
 
 main :: IO ()
 main = do

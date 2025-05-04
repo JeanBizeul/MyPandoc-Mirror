@@ -5,7 +5,7 @@
 -- Main
 -}
 
-import GeneralParse ()
+import GeneralParse (runParser)
 import Options.Applicative (execParser, info, helper, fullDesc, (<**>))
 import OptsParsing (
     opts,
@@ -14,6 +14,8 @@ import OptsParsing (
 import Document (Document (body, Document, header), Header (Header, title, date, author))
 import System.Exit (exitWith)
 import GHC.IO.Exception (ExitCode(ExitFailure))
+import XMLParse
+import XMLWriter
 
 parseJSON :: String -> Maybe Document
 parseJSON _ = Just (Document {
@@ -21,9 +23,9 @@ parseJSON _ = Just (Document {
     body=[]})
 
 parseXML :: String -> Maybe Document
-parseXML _ = Just (Document {
-    header=Header {title="XML title", date=Nothing, author=Nothing},
-    body=[]})
+parseXML str = case runParser parseXMLDocument str of
+    Just (doc, _) -> Just doc
+    Nothing       -> Nothing
 
 parseMarkdown :: String -> Maybe Document
 parseMarkdown _ = Just (Document {
@@ -34,7 +36,7 @@ writeJSON :: Document -> Maybe String
 writeJSON _ = Just "JSON output"
 
 writeXML :: Document -> Maybe String
-writeXML _ = Just "XML output"
+writeXML doc = Just (documentToXML doc)
 
 writeMarkdown :: Document -> Maybe String
 writeMarkdown _ = Just "Markdown output"

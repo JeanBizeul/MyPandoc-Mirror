@@ -54,38 +54,38 @@ spec = do
             runParser parseDoubleBalise "<balise>" `shouldBe` Nothing
         it "On a double balise" $ do
             runParser parseDoubleBalise "<balise title=\"example\"></balise>" `shouldBe` Nothing
-    describe "parseXML simple balise" $ do
+    describe "parseXMLbalise simple balise" $ do
         it "Correct" $ do
-            runParser parseXML "<balise>" `shouldBe` Just (Balise {balTit = "balise", balArg = Nothing},"")
+            runParser parseXMLbalise "<balise>" `shouldBe` Just (Balise {balTit = "balise", balArg = Nothing},"")
         it "Double balise name" $ do
-            runParser parseXML "<balise a>" `shouldBe` Nothing
+            runParser parseXMLbalise "<balise a>" `shouldBe` Nothing
         it "Character outside balise" $ do
-            runParser parseXML "<balise> a" `shouldBe` Nothing
+            runParser parseXMLbalise "<balise> a" `shouldBe` Nothing
         it "No <" $ do
-            runParser parseXML "balise>" `shouldBe` Nothing
+            runParser parseXMLbalise "balise>" `shouldBe` Nothing
         it "No >" $ do
-            runParser parseXML "<balise" `shouldBe` Nothing
-    describe "parseXML args balise" $ do
+            runParser parseXMLbalise "<balise" `shouldBe` Nothing
+    describe "parseXMLbalise args balise" $ do
         it "correct" $ do
-            runParser parseXML "<balise title=\"example\"></balise>" `shouldBe` Just (Balise {balTit = "balise", balArg = Just [BaliseArg {bT = "title", bC = Just "example"}]},"")
+            runParser parseXMLbalise "<balise title=\"example\"></balise>" `shouldBe` Just (Balise {balTit = "balise", balArg = Just [BaliseArg {bT = "title", bC = Just "example"}]},"")
         it "Without end balise" $ do
-            runParser parseXML "<balise title=\"example\">" `shouldBe` Just (Balise {balTit = "balise", balArg = Just [BaliseArg {bT = "title", bC = Just "example"}]},"")
+            runParser parseXMLbalise "<balise title=\"example\">" `shouldBe` Just (Balise {balTit = "balise", balArg = Just [BaliseArg {bT = "title", bC = Just "example"}]},"")
         it "No <" $ do
-            runParser parseXML "balise title=\"example\">" `shouldBe` Nothing
+            runParser parseXMLbalise "balise title=\"example\">" `shouldBe` Nothing
         it "No >" $ do
-            runParser parseXML "<balise title=\"example\"" `shouldBe` Nothing
-    describe "parseXML double balise" $ do
+            runParser parseXMLbalise "<balise title=\"example\"" `shouldBe` Nothing
+    describe "parseXMLbalise double balise" $ do
         it "correct" $ do
-            runParser parseXML "<paragraph>example</paragraph>" `shouldBe` Just (Balise {balTit = "paragraph", balArg = Just [BaliseArg {bT = "paragraph", bC = Just "example"}]},"")
+            runParser parseXMLbalise "<paragraph>example</paragraph>" `shouldBe` Just (Balise {balTit = "paragraph", balArg = Just [BaliseArg {bT = "paragraph", bC = Just "example"}]},"")
         it "Balise between balise" $ do
-            runParser parseXML "<paragraph><test>example</test></paragraph>" `shouldBe` Just (Balise {balTit = "paragraph", balArg = Just [BaliseArg {bT = "test", bC = Just "example"}]},"")
+            runParser parseXMLbalise "<paragraph><test>example</test></paragraph>" `shouldBe` Just (Balise {balTit = "paragraph", balArg = Just [BaliseArg {bT = "test", bC = Just "example"}]},"")
         it "Without end balise" $ do
-            runParser parseXML "<paragraph>example" `shouldBe` Nothing
+            runParser parseXMLbalise "<paragraph>example" `shouldBe` Nothing
         it "No < first balise" $ do
-            runParser parseXML "paragraph>example</paragraph>" `shouldBe` Nothing
+            runParser parseXMLbalise "paragraph>example</paragraph>" `shouldBe` Nothing
         it "No > first balise" $ do
-            runParser parseXML "<paragraphexample</paragraph>" `shouldBe` Nothing
+            runParser parseXMLbalise "<paragraphexample</paragraph>" `shouldBe` Nothing
         it "No < second balise" $ do
-            runParser parseXML "<paragraph>example/paragraph>" `shouldBe` Nothing
+            runParser parseXMLbalise "<paragraph>example/paragraph>" `shouldBe` Nothing
         it "No > second balise" $ do
-            runParser parseXML "<paragraph>example</paragraph" `shouldBe` Nothing
+            runParser parseXMLbalise "<paragraph>example</paragraph" `shouldBe` Nothing
